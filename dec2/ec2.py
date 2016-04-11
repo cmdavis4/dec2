@@ -164,11 +164,16 @@ class EC2(object):
                security_group=DEFAULT_SG_GROUP_NAME,
                volume_type='gp2',
                volume_size=500,
-               keypair=None):
+               keypair=None,
+               subnet_id=None,
+               security_group_id=None,
+               private_ip_address=None):
         self.check_keyname(keyname)
         if keypair:
             self.check_keypair(keyname, keypair)
-        self.check_sg(security_group)
+        # TODO: Add check for security_group_id also
+        if not (security_group_id is not None and security_group==DEFAULT_SG_GROUP_NAME):
+            self.check_sg(security_group)
 
         device_map = [
             {
@@ -182,15 +187,26 @@ class EC2(object):
         ]
 
         logger.debug("Creating %i instances on EC2", count)
-        instances = self.ec2.create_instances(
-            ImageId=image_id,
-            KeyName=keyname,
-            MinCount=count,
-            MaxCount=count,
-            InstanceType=instance_type,
-            SecurityGroups=[security_group],
-            SecurityGroupIds=self.get_security_group_ids([security_group]),
-            BlockDeviceMappings=device_map,)
+
+        kwargs={
+            'ImageId': image_id,
+            'KeyName': keyname,
+            'MinCount': count,
+            'MaxCount': count,
+            'InstanceType': instance_type,
+            'BlockDeviceMappings': device_map
+        }
+        if subnet_id is not None:
+            kwargs['SubnetId'] = subnet_id
+        if security_group_id is not None:
+            kwargs['SecurityGroupIds'] = [security_group_id]
+        else:
+            kwargs['SecurityGroups'] = [security_group]
+            kwargs['SecurityGroupIds'] = self.get_security_group_ids([security_group])
+        if private_ip_address is not None:
+            kwargs['PrivateIpAddress'] = private_ip_address
+
+        instances = self.ec2.create_instances(**kwargs)
         time.sleep(5)
 
         ids = [i.id for i in instances]

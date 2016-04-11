@@ -115,8 +115,29 @@ def cli(ctx):
               show_default=True,
               required=False,
               help="Number of processes per worker")
+@click.option("--subnet-id",
+              "subnet_id",
+              default=None,
+              show_default=True,
+              required=False,
+              help="[VPC] Subnet ID")
+@click.option("--security-group-id",
+              "security_group_id",
+              default=None,
+              show_default=True,
+              required=False,
+              help="Security Group ID. Takes precedence over --security-group if passed.")
+@click.option("--private-ip-address",
+              "private_ip_address",
+              default=None,
+              show_default=True,
+              required=False,
+              help="[EC2-VPC] The primary IP address")
+
+
 def up(ctx, name, keyname, keypair, region_name, ami, username, instance_type, count,
-       security_group, volume_type, volume_size, filepath, _provision, anaconda_, dask, nprocs):
+       security_group, volume_type, volume_size, filepath, _provision, anaconda_,
+       dask, nprocs, subnet_id, security_group_id, private_ip_address):
     import os
     import yaml
     from ..ec2 import EC2
@@ -137,7 +158,10 @@ def up(ctx, name, keyname, keypair, region_name, ami, username, instance_type, c
                               security_group=security_group,
                               volume_type=volume_type,
                               volume_size=volume_size,
-                              keypair=keypair)
+                              keypair=keypair,
+                              subnet_id=subnet_id,
+                              security_group_id=security_group_id,
+                              private_ip_address=private_ip_address)
 
     cluster = Cluster.from_boto3_instances(instances)
     cluster.set_username(username)
